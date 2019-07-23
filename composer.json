@@ -1,0 +1,22 @@
+{
+    "name": "prayno/moveon-course-catalogue-bundle",
+    "description": "Set of commands to manage your course catalogue in MoveOn",
+    "type": "symfony-bundle",
+    "require": {
+        "php": "^7.1.3",
+        "prayno/moveon-api-bundle": "^1.0",
+        "symfony/framework-bundle": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PRayno\\MoveOnCourseCatalogueBundle\\": "src/"
+        }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "RAYNAUD Pierre",
+            "email": "pierre.raynaud@uca.fr"
+        }
+    ]
+}
