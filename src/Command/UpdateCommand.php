@@ -40,6 +40,21 @@ class UpdateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        // Search for current active courses
+        $courses = $this->moveOnApi->findBy("catalogue-course",["is_active"=>1],["id"=>"asc"],50000,1,["id",$this->moveonCourse->getIdentifier()]);
+        $moveonCourses=[];
+        $attributeId="catalogue_course.id";
+        $attributeIdentifier = "catalogue_course.".$this->moveonCourse->getIdentifier();
+        foreach ($courses->rows as $course)
+        {
+            $identifier = $course->$attributeIdentifier->__toString();
+
+            if (empty($identifier))
+                continue;
+
+            $moveonCourses[$identifier]=$course->$attributeId->__toString();
+        }
+
         $io = new SymfonyStyle($input, $output);
 
         $source = file_get_contents($input->getArgument('csv-file'));
@@ -71,30 +86,13 @@ class UpdateCommand extends Command
             $identifier["value"] = $attributes[$identifier["field"]];
 
             // Try to see if entry already exists
-            $courseId=null;
-            try {
-                $data = $this->moveOnApi->findBy("catalogue-course",[$identifier["field"]=>$identifier["value"]]);
-                if ($data->records == 1)
-                {
-                    $attribute = "catalogue_course.id";
-                    $attributes["id"] = $data->rows[0]->$attribute->__toString();
-                }
-
-                if ($data->records > 1)
-                {
-                    $io->caution(date("Y-m-d H:i:s")." - Warning : several MoveON courses are identified as ".$identifier["value"]." and the data have been updated in the source. Please check manually.");
-                    continue;
-                }
-            }
-            catch (\Exception $exception)
-            {
-                $io->error($exception->getMessage());
-            }
+            if (isset($moveonCourses[$identifier["value"]]))
+                $attributes["id"] = $moveonCourses[$identifier["value"]];
 
             // Publish to MoveON
             try {
                 $this->moveOnApi->save("catalogue-course",$attributes);
-                $io->success(date("Y-m-d H:i:s")." - CSV line $line : Course saved - ".$identifier["value"]);
+                $io->success(date("Y-m-d H:i:s")." - CSV line $line : Course ".($attributes["id"]?"updated":"created")." - ".$identifier["value"]);
             }
             catch (\Exception $exception)
             {
