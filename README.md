@@ -3,7 +3,7 @@ This is a Symfony bundle to manage your MoveOn (https://www.qs-unisolution.com/m
 
 It provides 2 commands :
 - import a course catalogue from a CSV to MoveOn
-- deactivate a liste of course in the MoveOn course catalogue
+- deactivate a list of courses in the MoveOn course catalogue
 
 ## Installation
 Install the library via Composer by running the following command:
