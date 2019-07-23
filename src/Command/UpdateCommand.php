@@ -8,6 +8,7 @@ use PRayno\MoveOnApi\MoveOn;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -35,6 +36,7 @@ class UpdateCommand extends Command
             ->setDescription('Update MoveON course catalog from CSV file')
             ->addArgument('csv-file', InputArgument::REQUIRED, 'CSV file location')
             ->addArgument('from-date', InputArgument::OPTIONAL, 'Update only elements modified from a given date - YYY-MM-DD',date_format(new \DateTime('yesterday'),"Y-m-d"))
+            ->addOption("dump", "d",InputOption::VALUE_NONE, 'Dump the stats (created/updated) without publishing to MoveOn')
         ;
     }
 
@@ -63,6 +65,7 @@ class UpdateCommand extends Command
         $rows = $serializer->decode($source,'csv');
 
         $line=0;
+        $stats = ["create"=>0,"update"=>0];
         foreach ($rows as $row)
         {
             $line++;
@@ -89,6 +92,16 @@ class UpdateCommand extends Command
             if (isset($moveonCourses[$identifier["value"]]))
                 $attributes["id"] = $moveonCourses[$identifier["value"]];
 
+            if ($input->getOption("dump")===true)
+            {
+                if (isset($attributes["id"]))
+                    $stats["update"]++;
+                else
+                    $stats["create"]++;
+
+                continue;
+            }
+
             // Publish to MoveON
             try {
                 $this->moveOnApi->save("catalogue-course",$attributes);
@@ -99,7 +112,11 @@ class UpdateCommand extends Command
                 $io->error(date("Y-m-d H:i:s")." - CSV line $line : ".$exception->getMessage());
             }
         }
-        $io->text($line);
+
+        if ($input->getOption("dump")===true)
+            $io->text("This will create ".$stats["create"]." course(s) and update ".$stats["update"]);
+        else
+            $io->text($line);
     }
 
     private function rowIsValid(array $row, string $fromDate)
