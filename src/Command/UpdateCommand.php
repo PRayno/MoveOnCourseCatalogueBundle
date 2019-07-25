@@ -43,7 +43,7 @@ class UpdateCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Search for current active courses
-        $courses = $this->moveOnApi->findBy("catalogue-course",["is_active"=>1],["id"=>"asc"],50000,1,["id",$this->moveonCourse->getIdentifier()]);
+        $courses = $this->moveOnApi->findBy("catalogue-course",["is_active"=>1],["id"=>"asc"],50000,1,["id",$this->moveonCourse->getIdentifier()],"eng","true","queue",60);
         $moveonCourses=[];
         $attributeId="catalogue_course.id";
         $attributeIdentifier = "catalogue_course.".$this->moveonCourse->getIdentifier();
