@@ -42,10 +42,10 @@ class UpdateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // Search for current active courses
-        $courses = $this->moveOnApi->findBy("catalogue-course",["is_active"=>1],["id"=>"asc"],50000,1,["id",$this->moveonCourse->getIdentifier()],"eng","true","queue",60);
+        $courses = $this->moveOnApi->findBy("catalogue-course",[],["id"=>"asc"],100000,1,["id",$this->moveonCourse->getIdentifier(),"is_active"],"eng","true","queue",60);
         $moveonCourses=[];
         $attributeId="catalogue_course.id";
+        $attributeIsActive = "catalogue_course.is_active";
         $attributeIdentifier = "catalogue_course.".$this->moveonCourse->getIdentifier();
         foreach ($courses->rows as $course)
         {
@@ -54,7 +54,7 @@ class UpdateCommand extends Command
             if (empty($identifier))
                 continue;
 
-            $moveonCourses[$identifier]=$course->$attributeId->__toString();
+            $moveonCourses[$identifier]=["id"=>$course->$attributeId->__toString(),"active"=>$course->$attributeIsActive->__toString()];
         }
 
         $io = new SymfonyStyle($input, $output);
@@ -90,7 +90,10 @@ class UpdateCommand extends Command
 
             // Try to see if entry already exists
             if (isset($moveonCourses[$identifier["value"]]))
-                $attributes["id"] = $moveonCourses[$identifier["value"]];
+            {
+                $attributes["id"] = $moveonCourses[$identifier["value"]]["id"];
+                $attributes["is_active"] = $moveonCourses[$identifier["value"]]["active"];
+            }
 
             if ($input->getOption("dump")===true)
             {
@@ -111,6 +114,7 @@ class UpdateCommand extends Command
             {
                 $io->error(date("Y-m-d H:i:s")." - CSV line $line : ".$exception->getMessage());
             }
+            die;
         }
 
         if ($input->getOption("dump")===true)
