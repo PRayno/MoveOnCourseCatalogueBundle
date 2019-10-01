@@ -22,7 +22,7 @@ prayno_moveon_course_catalogue:
     required_fields: ['FIELD3','FIELD4']
 ```
 
-- *moveon_course_object* : object implementing the PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourseInterface to create your own values for MoveOn attributes based on a CSV line (see default in PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourse)
+- *moveon_course_object* : (optional) your custom MoveOn course object - see the "Customization" section
 - *delimiter* : CSV delimiter (default is Tab)
 - *latest_date_fields* : array of fieldnames in your CSV file that correspond to the modification dates of the line
 - *required_fields* : array of fieldnames in your CSV file that are required to process a line
@@ -47,3 +47,17 @@ Example of queries :
 '{\"field\":\"catalogue_course.is_active\",\"op\":\"eq\",\"data\":\"1\"},{\"field\":\"catalogue_course.start_academic_period\",\"op\":\"eq\",\"data\":\"1er semestre 2017/18\"}'
 ```
 
+## Customization
+
+You can customize the course object to suit your needs by creating a class implementing the PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourseInterface (or extending the default PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourse).
+You have to create a function with the snakecase name of the MoveOn Course attribute you want to customize like in the following example :
+```php
+use PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourse;
+
+class MyCustomMoveOnCourse extends MoveonCourse
+{
+    protected function setName(array $row)
+    {
+        return $row["FIELD1"]." ~~ ".$row["FIELD2"];    
+    }
+```

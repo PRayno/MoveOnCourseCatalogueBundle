@@ -105,7 +105,7 @@ class UpdateCommand extends Command
             // Publish to MoveON
             try {
                 $this->moveOnApi->save("catalogue-course",$attributes);
-                $io->success(date("Y-m-d H:i:s")." - CSV line $line : Course ".($attributes["id"]?"updated":"created")." - ".$identifier["value"]);
+                $io->success(date("Y-m-d H:i:s")." - CSV line $line : Course ".(isset($attributes["id"])?"updated":"created")." - ".$identifier["value"]);
             }
             catch (\Exception $exception)
             {
