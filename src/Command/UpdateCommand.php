@@ -114,7 +114,6 @@ class UpdateCommand extends Command
             {
                 $io->error(date("Y-m-d H:i:s")." - CSV line $line : ".$exception->getMessage());
             }
-            die;
         }
 
         if ($input->getOption("dump")===true)
