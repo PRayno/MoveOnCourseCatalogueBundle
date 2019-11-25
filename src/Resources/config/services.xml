@@ -8,11 +8,23 @@
         <service id="prayno_moveon_course_catalogue" class="PRayno\MoveOnCourseCatalogueBundle\PRaynoMoveOnCourseCatalogue" />
         <service id="prayno_moveon_course_catalogue.course" class="PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourse"/>
         <service alias="prayno_moveon_course_catalogue.course" id="PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourse" />
-        <service id="prayno_moveon_course_catalogue.update_command" class="PRayno\MoveOnCourseCatalogueBundle\Command\UpdateCommand" public="true">
-            <tag name="console.command" />
+
+        <service id="prayno_move_on_course_catalogue.course.csv_course" class="PRayno\MoveOnCourseCatalogueBundle\Course\CsvCourse">
             <argument type="service" id="prayno_moveon_course_catalogue.course" />
             <argument type="service" id="prayno_moveon_api" />
         </service>
+
+        <service id="prayno_move_on_course_catalogue.logic.move_on_process" class="PRayno\MoveOnCourseCatalogueBundle\Logic\MoveOnProcess">
+            <argument type="service" id="prayno_moveon_course_catalogue.course" />
+            <argument type="service" id="prayno_moveon_api" />
+        </service>
+
+        <service id="prayno_moveon_course_catalogue.update_command" class="PRayno\MoveOnCourseCatalogueBundle\Command\UpdateCommand" public="true">
+            <tag name="console.command" />
+            <argument type="service" id="prayno_move_on_course_catalogue.course.csv_course" />
+            <argument type="service" id="prayno_move_on_course_catalogue.logic.move_on_process" />
+        </service>
+
         <service id="prayno_moveon_course_catalogue.deactivate_command" class="PRayno\MoveOnCourseCatalogueBundle\Command\DeactivateCommand" public="true">
             <tag name="console.command" />
             <argument type="service" id="prayno_moveon_api" />

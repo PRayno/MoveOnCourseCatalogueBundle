@@ -15,17 +15,31 @@ This bundle depends on the MoveOnApiBundle so you must include the configuration
 Create a config/packages/prayno_moveon_course_catalogue.yaml file in your Symfony application with the following settings :
 ```yaml
 prayno_moveon_course_catalogue:
-  moveon_course_object: My\Moveon\Course\Object
   csv:
     delimiter: ""
     latest_date_fields: ['FIELD1','FIELD2'] 
     required_fields: ['FIELD3','FIELD4']
+
+  sub_institution:
+    code_field: "fieldname"
+    main_institution_id: 1
+
+  academic_periods:
+    code1: id
+    code2: id
+
+  update_courses_modified_by : ["User1-lastname, User1-firstname","User2-lastname, User2-firstname"]
+  course_identifier_regex: "/regex/"
 ```
 
-- *moveon_course_object* : (optional) your custom MoveOn course object - see the "Customization" section
 - *delimiter* : CSV delimiter (default is Tab)
 - *latest_date_fields* : array of fieldnames in your CSV file that correspond to the modification dates of the line
 - *required_fields* : array of fieldnames in your CSV file that are required to process a line
+- *code_field* : fieldname of the sub_institution code in MoveOn institution db table
+- *main_institution_id* : parent institution id the sub institutions are linked to
+- *academic_periods* : array of academic period code used to link CSV course with academic period : id (eg. 1S2019/20: 123456)
+- *update_courses_modified_by* : only the courses modified by these users (Lastname, Firstname) will be affected by update (to avoid overriding of local modifications)
+- *course_identifier_regex* : regex of the identifier (default external_id) used to deactivate the courses in MoveOn db which are no longer in the CSV
 
 ## Usage
 
@@ -61,3 +75,12 @@ class MyCustomMoveOnCourse extends MoveonCourse
         return $row["FIELD1"]." ~~ ".$row["FIELD2"];    
     }
 ```
+
+Then declare your class in services.yml and copy the "academic_periods" parameters in your app parameters :
+```yaml
+    prayno_moveon_course_catalogue.course:
+        class: MyCustomMoveOnCourseNamespace\MyCustomMoveOnCourse
+        arguments:
+            $academicPeriods: '%academic_periods%'
+```
+This allows you to inject other services when processing the course catalogue

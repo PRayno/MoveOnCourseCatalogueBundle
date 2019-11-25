@@ -2,31 +2,27 @@
 
 namespace PRayno\MoveOnCourseCatalogueBundle\Command;
 
-use PRayno\MoveOnApiBundle\MoveOnApi;
-use PRayno\MoveOnCourseCatalogueBundle\Course\MoveonCourseInterface;
-use PRayno\MoveOnApi\MoveOn;
+use PRayno\MoveOnCourseCatalogueBundle\Course\CsvCourse;
+use PRayno\MoveOnCourseCatalogueBundle\Logic\MoveOnProcess;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\Serializer\Encoder\CsvEncoder;
-use Symfony\Component\Serializer\Serializer;
 
 class UpdateCommand extends Command
 {
     protected static $defaultName = 'moveon:course-catalog:update';
-    private $csvParameters=[];
     private $moveonCourse;
     private $moveOnApi;
+    private $csvCourse;
+    private $moveOnProcess;
 
-    public function __construct(MoveonCourseInterface $moveonCourse,MoveOnApi $moveOnApi,array $csvParameters)
+    public function __construct(CsvCourse $csvCourse, MoveOnProcess $moveOnProcess)
     {
-        $this->moveOnApi = $moveOnApi;
-        $this->csvParameters = $csvParameters;
-        $this->moveonCourse = $moveonCourse;
+        $this->csvCourse = $csvCourse;
+        $this->moveOnProcess = $moveOnProcess;
         parent::__construct();
     }
 
@@ -42,100 +38,25 @@ class UpdateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $courses = $this->moveOnApi->findBy("catalogue-course",[],["id"=>"asc"],100000,1,["id",$this->moveonCourse->getIdentifier(),"is_active"],"eng","true","queue",60);
-        $moveonCourses=[];
-        $attributeId="catalogue_course.id";
-        $attributeIsActive = "catalogue_course.is_active";
-        $attributeIdentifier = "catalogue_course.".$this->moveonCourse->getIdentifier();
-        foreach ($courses->rows as $course)
-        {
-            $identifier = $course->$attributeIdentifier->__toString();
-
-            if (empty($identifier))
-                continue;
-
-            $moveonCourses[$identifier]=["id"=>$course->$attributeId->__toString(),"active"=>$course->$attributeIsActive->__toString()];
-        }
-
         $io = new SymfonyStyle($input, $output);
 
-        $source = file_get_contents($input->getArgument('csv-file'));
-        $csvEncoder =new CsvEncoder((empty($this->csvParameters["delimiter"])?"\t":$this->csvParameters["delimiter"]));
-        $serializer = new Serializer([],[$csvEncoder]);
-        $rows = $serializer->decode($source,'csv');
+        $csvCourses = $this->csvCourse->buildMoveOnCourseList($input->getArgument('csv-file'), $input->getArgument('from-date'));
 
-        $line=0;
-        $stats = ["create"=>0,"update"=>0];
-        foreach ($rows as $row)
-        {
-            $line++;
-            if (false === $this->rowIsValid($row,$input->getArgument('from-date')))
-                continue;
-
-            $moveOnCourse = $this->moveonCourse;
-            foreach($this->moveOnApi->getEntity("catalogue-course") as $attribute)
-            {
-                $moveOnCourse->__set($attribute,(array) $row);
-            }
-
-            $attributes = $moveOnCourse->getAttributes();
-
-            $identifier = ["field"=>$moveOnCourse->getIdentifier(),"value"=>null];
-            if (!isset($attributes[$identifier["field"]]))
-            {
-                $io->error(date("Y-m-d H:i:s")." - CSV line $line : The field ".$identifier["field"]." cannot be null in a MoveOn catalog-course object");
-                continue;
-            }
-            $identifier["value"] = $attributes[$identifier["field"]];
-
-            // Try to see if entry already exists
-            if (isset($moveonCourses[$identifier["value"]]))
-            {
-                $attributes["id"] = $moveonCourses[$identifier["value"]]["id"];
-                $attributes["is_active"] = $moveonCourses[$identifier["value"]]["active"];
-            }
-
-            if ($input->getOption("dump")===true)
-            {
-                if (isset($attributes["id"]))
-                    $stats["update"]++;
-                else
-                    $stats["create"]++;
-
-                continue;
-            }
-
-            // Publish to MoveON
-            try {
-                $this->moveOnApi->save("catalogue-course",$attributes);
-                $io->success(date("Y-m-d H:i:s")." - CSV line $line : Course ".(isset($attributes["id"])?"updated":"created")." - ".$identifier["value"]);
-            }
-            catch (\Exception $exception)
-            {
-                $io->error(date("Y-m-d H:i:s")." - CSV line $line : ".$exception->getMessage());
-            }
+        if (!empty($csvCourses["errors"])) {
+            foreach ($csvCourses["errors"] as $error)
+                $io->error($error);
         }
 
-        if ($input->getOption("dump")===true)
-            $io->text("This will create ".$stats["create"]." course(s) and update ".$stats["update"]);
+        $moveonCourses = $this->moveOnProcess->retrieveMoveOnCourses();
+
+        $stats = $this->moveOnProcess->synchronize($csvCourses["courses"], $moveonCourses, $io, $input->getOption("dump"));
+
+        if ($input->getOption("dump") === true)
+            $io->text("This will create " . $stats["create"] . " course(s) and update " . $stats["update"]);
         else
-            $io->text($line);
-    }
-
-    private function rowIsValid(array $row, string $fromDate)
-    {
-        foreach ($this->csvParameters["required_fields"] as $field)
         {
-            if (empty($row[$field]))
-                return false;
+            $io->text($stats["create"] . " course(s) created and " . $stats["update"] . " updated");
+            $this->moveOnProcess->deactivateDeletedCourses($csvCourses["in_file"], $moveonCourses, $io);
         }
-
-        foreach ($this->csvParameters["latest_date_fields"] as $field)
-        {
-            if ($row[$field] < $fromDate)
-                return false;
-        }
-
-        return true;
     }
 }

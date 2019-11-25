@@ -7,6 +7,14 @@ class MoveonCourse implements MoveonCourseInterface
 {
     private $identifier="external_id";
     private $attributes=[];
+    private $academicPeriods;
+    public $subInstitutions=[];
+    public $course;
+
+    public function __construct(array $academicPeriods)
+    {
+        $this->academicPeriods = $academicPeriods;
+    }
 
     /**
      * @return string
@@ -67,5 +75,46 @@ class MoveonCourse implements MoveonCourseInterface
     protected function setRemarks(array $row)
     {
         return utf8_encode("Diplome : ".$row["COD_DIP"]." : ".$row["LIB_DIP"])."\u000A".utf8_encode("Etape :  ".$row["COD_ETP"]." : ".$row["LIB_ETP"])."\u000A".utf8_encode("Semestre :  ".$row["COD_ELP_SEM"]." : ".$row["LIB_ELP_SEM"])."\u000A".utf8_encode("UE :  ".$row["COD_ELP_UE"]." : ".$row["LIB_ELP_UE"])."\u000A".utf8_encode("Matiere : ".$row["COD_ELP_EC"]." : ".$row["LIB_ELP_EC"]);
+    }
+
+    protected function setStartAcademicPeriodId(array $row)
+    {
+        if (is_null($row["COD_PEL_SEM"]))
+            return null;
+
+        $code = strrev($row["COD_PEL_SEM"]).$row["COD_ANU"]."/".substr($row["COD_ANU"]+1,-2);
+
+        if (isset($this->academicPeriods[$code]))
+        {
+            if (isset($this->course["start_academic_period_id"]))
+            {
+                if ($this->course["start_academic_period_id"] != $this->academicPeriods[$code])
+                    return null;
+            }
+
+            return $this->academicPeriods[$code];
+        }
+
+        return null;
+    }
+
+    protected function setSubInstitutionIds(array $row)
+    {
+        $subInstitutions=[];
+        if (isset($this->course["sub_institution_ids"]))
+            $subInstitutions = explode(",",$this->course["sub_institution_ids"]);
+
+        foreach (array_keys($row) as $field)
+        {
+            if (!strstr($field,"COD_CMP"))
+                continue;
+
+            if (isset($this->subInstitutions[$row[$field]]))
+                $subInstitutions[] = $this->subInstitutions[$row[$field]];
+        }
+
+        $subInstitutions = array_unique($subInstitutions);
+
+        return implode(",",$subInstitutions);
     }
 }
