@@ -2,7 +2,7 @@
 This is a Symfony bundle to manage your MoveOn (https://www.qs-unisolution.com/moveon/) course catalogue.
 
 It provides 2 commands :
-- import a course catalogue from a CSV to MoveOn
+- import a course catalogue from a CSV file to MoveOn
 - deactivate a list of courses in the MoveOn course catalogue
 
 ## Installation
@@ -28,8 +28,11 @@ prayno_moveon_course_catalogue:
     code1: id
     code2: id
 
-  update_courses_modified_by : ["User1-lastname, User1-firstname","User2-lastname, User2-firstname"]
+  update_courses_modified_by : ["User1-firstname, User1-lastname","User2-firstname, User2-lastname"]
   course_identifier_regex: "/regex/"
+
+  excluded_lines:
+    key: ["value1","value2"]
 ```
 
 - *delimiter* : CSV delimiter (default is Tab)
@@ -40,6 +43,7 @@ prayno_moveon_course_catalogue:
 - *academic_periods* : array of academic period code used to link CSV course with academic period : id (eg. 1S2019/20: 123456)
 - *update_courses_modified_by* : only the courses modified by these users (Lastname, Firstname) will be affected by update (to avoid overriding of local modifications)
 - *course_identifier_regex* : regex of the identifier (default external_id) used to deactivate the courses in MoveOn db which are no longer in the CSV
+- *excluded_lines* : lines to be excluded from the process (optional). 
 
 ## Usage
 

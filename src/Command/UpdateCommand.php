@@ -14,8 +14,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class UpdateCommand extends Command
 {
     protected static $defaultName = 'moveon:course-catalog:update';
-    private $moveonCourse;
-    private $moveOnApi;
     private $csvCourse;
     private $moveOnProcess;
 
@@ -41,6 +39,9 @@ class UpdateCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $csvCourses = $this->csvCourse->buildMoveOnCourseList($input->getArgument('csv-file'), $input->getArgument('from-date'));
+
+        if (empty($csvCourses["courses"]))
+            return 0;
 
         if (!empty($csvCourses["errors"])) {
             foreach ($csvCourses["errors"] as $error)

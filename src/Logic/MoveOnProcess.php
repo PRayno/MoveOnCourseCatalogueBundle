@@ -24,9 +24,9 @@ class MoveOnProcess
      * @return array
      * @throws \Exception
      */
-    public function retrieveMoveOnCourses()
+    public function retrieveMoveOnCourses($filter=[])
     {
-        $courses = $this->moveOnApi->findBy("catalogue-course",[],["id"=>"asc"],100000,1,["id",$this->moveonCourse->getIdentifier(),"last_modified_by"],"eng","true","queue",60);
+        $courses = $this->moveOnApi->findBy("catalogue-course",$filter,["id"=>"asc"],100000,1,["id",$this->moveonCourse->getIdentifier(),"last_modified_by"],"eng","true","queue",60);
         $moveonCourses=[];
         $attributeId="catalogue_course.id";
         $attributeLastModifyBy = "catalogue_course.last_modified_by";
@@ -40,7 +40,7 @@ class MoveOnProcess
 
             $moveonCourses[$identifier]=["id"=>$course->$attributeId->__toString(),"last_modified_by"=>$course->$attributeLastModifyBy->__toString()];
         }
-        
+
         return $moveonCourses;
     }
 
@@ -58,7 +58,7 @@ class MoveOnProcess
         {
             $attributes = $csvCourse->getAttributes();
             $identifier = $csvCourse->getIdentifier();
-            
+
             // Try to see if entry already exists
             if (isset($moveonCourses[$attributes[$identifier]]))
             {
@@ -87,7 +87,7 @@ class MoveOnProcess
                 $io->error(date("Y-m-d H:i:s")." - CSV line $line : ".$exception->getMessage());
             }
         }
-        
+
         return $stats;
     }
 
