@@ -101,8 +101,8 @@ class CsvCourse
 
         foreach ($this->csvParameters["latest_date_fields"] as $field)
         {
-            if ($row[$field] < $fromDate)
-                return false;
+            if ($row[$field] >= $fromDate)
+                return true;
         }
 
         return true;
