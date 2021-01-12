@@ -105,6 +105,6 @@ class CsvCourse
                 return true;
         }
 
-        return true;
+        return false;
     }
 }
